@@ -1,14 +1,14 @@
 // Write your "actions" router here!
 const express = require('express');
 const Actions = require('./actions-model');
-const Projects = require('../projects/projects-model');
-const { validateActionData, validateProjectId } = require('./actions-middlware');
+//const Projects = require('../projects/projects-model');
+const { checkActionUpdatePayload, checkActionCreatePayload } = require('./actions-middlware');
 const router = express.Router();
 
 
 router.get('/', async (req, res) => {
     try {
-        const actions = await Actions.getAll();
+        const actions = await Actions.get();
         console.log(actions)
         res.json(actions); 
     } catch (err) {
@@ -50,10 +50,9 @@ router.get('/:id', async (req, res) => {
 //     }
 // });
 
-router.post('/', validateActionData, validateProjectId, async (req, res) => {
-    const { project_id, description, notes } = req.body;
+router.post('/', checkActionCreatePayload, async (req, res) => {
     try {
-        const newAction = await Actions.insert({ project_id, description, notes });
+        const newAction = await Actions.insert(req.body);
         res.status(201).json(newAction);
     } catch (err) {
         res.status(500).json({ message: 'Failed to create action' });
@@ -61,19 +60,10 @@ router.post('/', validateActionData, validateProjectId, async (req, res) => {
 });
 
 
-router.put('/:id', async (req, res) => {
-    const { description, notes } = req.body; 
-    if (!description || !notes) {
-        return res.status(400).json({ message: 'Description and notes are required' });
-    }
-
+router.put('/:id', checkActionUpdatePayload, async (req, res) => {
     try {
-        const updatedAction = await Actions.update(req.params.id, { description, notes });
-        if (updatedAction) {
-            res.json(updatedAction);
-        } else {
-            res.status(404).json({ message: 'Action not found' });
-        }
+        const updatedAction = await Actions.update(req.params.id, req.body);
+        res.status(200).json(updatedAction)
     } catch (err) {
         res.status(500).json({ message: 'Failed to update action' });
     }
